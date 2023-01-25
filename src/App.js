@@ -5,7 +5,7 @@ import Editor from "./components/editor"
 import "ace-builds/src-noconflict/mode-javascript";
 import "ace-builds/src-noconflict/theme-tomorrow";
 import "ace-builds/src-noconflict/ext-language_tools";
-import { ChakraProvider, VStack, Box, Flex } from '@chakra-ui/react'
+import { ChakraProvider, VStack, Box, Text} from '@chakra-ui/react'
 import './App.css';
 
 function App() {
@@ -17,10 +17,8 @@ function App() {
       if (event.key === "e"){
       if(editorView === "show") {
         setEditorView("hide")
-        console.log("inactive");
       } else {
         setEditorView("show")
-        console.log("active");
       }
     }
     }
@@ -35,7 +33,7 @@ p.line(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY); `
   const brushToCanvas = (code) => {
     // hand the code to the canvas here.
     // any checking for malware could happen here.
-    setBrush(code.toString() );
+    setBrush(code.toString());
   };
   useEffect(() => {
     // attach the event listener
@@ -48,7 +46,7 @@ p.line(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY); `
 
   const setup = (p5, canvasParentRef) => {
     p5.createCanvas(window.innerWidth, window.innerHeight).parent(canvasParentRef)
-    p5.background(200);
+    p5.background(256);
 }
   const draw = p5 => {
     if (p5.mouseIsPressed) {
@@ -65,6 +63,13 @@ p.line(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY); `
     <ChakraProvider>
       <Box width={"100vw"} height={"100vh"} overflowY="hidden">
         <VStack>
+          <Box className='instructions'>
+            <VStack align={"start"} alignContent={"flex-start"} spacing={0.5} padding={5}>
+              <Text color={"blackAlpha.500"} fontSize={"sm"}>Ctrl + E: editor</Text>
+              <Text color={"blackAlpha.500"} fontSize={"sm"}>Ctrl + P: screenshot</Text>
+              <Text color={"blackAlpha.500"} fontSize={"sm"}>Ctrl + R: clear canvas</Text>
+            </VStack>
+          </Box>
           <Sketch setup={setup} draw={draw} containerRef={containerRef} brush={brush}/>
           <div id='codeEditor' className={editorView}>
             <Editor code={code} brushToCanvas={brushToCanvas} setCode={setCode}/>
@@ -74,24 +79,4 @@ p.line(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY); `
         </ChakraProvider>
   );
 }
-
-/*
-    useEffect(
-      () => {
-        let inst = p5(sketch, props.containerRef.current)
-        // Cleanup function! Without this the new p5.js sketches in new box
-        return () => inst.remove();
-      },
-      // Let React know that this effect needs re-rendering when the brush prop changes
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-      [props]
-    );
-  
-    return (
-      <Flex>
-        <div ref={props.containerRef}/>
-      </Flex>
-    );
-}
-    */
 export default App;
