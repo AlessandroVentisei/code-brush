@@ -1,69 +1,97 @@
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { useEffect, useRef } from 'react';
-import p5 from 'p5';
-import Editor from 'react-simple-code-editor';
-import { highlight, languages } from 'prismjs/components/prism-core';
-import 'prismjs/components/prism-clike';
-import 'prismjs/components/prism-javascript';
-import 'prismjs/themes/prism.css'; //Example style, you can use another
+import Sketch from 'react-p5';
+import Editor from "./components/editor"
+import "ace-builds/src-noconflict/mode-javascript";
+import "ace-builds/src-noconflict/theme-tomorrow";
+import "ace-builds/src-noconflict/ext-language_tools";
+import { ChakraProvider, VStack, Box, Flex } from '@chakra-ui/react'
+import './App.css';
 
 function App() {
-  const [code, setCode] = React.useState(
-    `function add(a, b) {\n  return a + b;\n}`
-  );
-  const [output, setOutput] = React.useState(`function add(a, b) {\n  return a + b;\n}`);
-      // create a reference to the container in which the p5 instance should place the canvas
-      const p5ContainerRef = useRef();
-
-      useEffect(() => {
-          // On component creation, instantiate a p5 object with the sketch and container reference 
-          const p5Instance = new p5(sketch, p5ContainerRef.current);
-  
-          // On component destruction, delete the p5 instance
-          return () => {
-              p5Instance.remove();
-          }
-      }, []);
-  return (
-    <body>
-      <Editor
-        value={code}
-        onValueChange={code => setCode(code)}
-        highlight={code => highlight(code, languages.js)}
-        padding={10}
-        style={{
-          fontFamily: '"Fira code", "Fira Mono", monospace',
-          fontSize: 12,
-        }}
-      />
-      <button onClick={()=>{userDefinedBrush(code)}}>Run</button>
-      <p>{output}</p>
-      <div className="App" ref={p5ContainerRef} />
-      </body>
-  );
-  function sketch(p) {
-    // p is a reference to the p5 instance this sketch is attached to
-    p.setup = function() {
-        p.createCanvas(400, 400);
-        p.background(256);
-    }
-    p.draw = function() {
-      if (p.mouseIsPressed) {
-        this.pen();
+  const [editorView, setEditorView] = useState("show");
+  let containerRef = useRef();
+  const handleKeyPress = useCallback((event) => {
+    if(event.ctrlKey === true) {
+      console.log(`Key pressed: ${event.key}`);
+      if (event.key === "e"){
+      if(editorView === "show") {
+        setEditorView("hide")
+        console.log("inactive");
+      } else {
+        setEditorView("show")
+        console.log("active");
       }
     }
-    p.pen = function() {
-      p.stroke(0, 0, 0, 255);
-      p.strokeWeight(2);
-      p.line(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY);
     }
+  }, [editorView]);
+  const [code, setCode] = React.useState(`// this is where you can code your own brushes
+p.stroke(Math.random()*250, Math.random()*250, 0, 255);
+p.strokeWeight(12);
+p.line(p.mouseX, p.mouseY, p.pmouseX, p.pmouseY); `
+  );
+  const [brush, setBrush] = useState(code);
+  // set initial p5 instance
+  const brushToCanvas = (code) => {
+    // hand the code to the canvas here.
+    // any checking for malware could happen here.
+    setBrush(code.toString() );
+  };
+  useEffect(() => {
+    // attach the event listener
+    document.addEventListener('keydown', handleKeyPress);
+    // remove the event listener
+    return () => {
+      document.removeEventListener('keydown', handleKeyPress);
+    };
+  }, [handleKeyPress, editorView]);
+
+  const setup = (p5, canvasParentRef) => {
+    p5.createCanvas(window.innerWidth, window.innerHeight).parent(canvasParentRef)
+    p5.background(200);
 }
-  function userDefinedBrush(code) {
-    // eslint-disable-next-line no-new-func
-    const F = new Function(code);
-    const output = F();
-    setOutput(output);
+  const draw = p5 => {
+    if (p5.mouseIsPressed) {
+      pen(p5);
+    }
   }
+  const pen = function(p) {
+    // eslint-disable-next-line no-new-func, no-eval
+    eval(brush);
+  }
+
+
+  return (
+    <ChakraProvider>
+      <Box width={"100vw"} height={"100vh"} overflowY="hidden">
+        <VStack>
+          <Sketch setup={setup} draw={draw} containerRef={containerRef} brush={brush}/>
+          <div id='codeEditor' className={editorView}>
+            <Editor code={code} brushToCanvas={brushToCanvas} setCode={setCode}/>
+              </div>
+            </VStack>
+          </Box>
+        </ChakraProvider>
+  );
 }
 
+/*
+    useEffect(
+      () => {
+        let inst = p5(sketch, props.containerRef.current)
+        // Cleanup function! Without this the new p5.js sketches in new box
+        return () => inst.remove();
+      },
+      // Let React know that this effect needs re-rendering when the brush prop changes
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+      [props]
+    );
+  
+    return (
+      <Flex>
+        <div ref={props.containerRef}/>
+      </Flex>
+    );
+}
+    */
 export default App;
